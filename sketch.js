@@ -29,7 +29,7 @@ To change from state 1 to state 2, sum must be greater than threshold c
 */
 let cells = [];
 let generation = 0;
-let b = 8;
+let b = 5;
 let home = [.481, .064, .426];
 let friends = [.466, .07, .455];
 let strangers = [0.362, 0.1, 0.528];
@@ -39,11 +39,15 @@ let random_gen = [0.333, 0.333, 0.333];
 let zoom;
 let zView;
 let states;
+let setBText;
+let setB;
+let currDist = [0,0,0];
+let currDistText;
 
 function setup() {
   let c0 = color(255,0,0);
-  let c1 = color(235, 152, 52);
-  let c2 = color(0,230,255);
+  let c1 = color(255, 196, 59);
+  let c2 = color(3, 219, 255);
   states = [c0, c1, c2];
   for (let j = 0; j < 105; j++) {
     let row = [];
@@ -59,8 +63,15 @@ function setup() {
     cells.push(row);
   }
   createCanvas(600, 800, WEBGL);
+  background(255, 208, 181);
+
+  let title = createP("<b>Cellular Automata: Simulating the Catalan Language");
+  title.position(650, 0);
+  title.addClass("p");
 
   let nextGen = createButton("Next Generation");
+  nextGen.mousePressed(() => findNextGen());
+  nextGen.position(650, 230);
 
   let sethome = createButton("Home");
   sethome.mousePressed(() => initializeGen(home));
@@ -68,36 +79,103 @@ function setup() {
 
   let setfriends = createButton("Friends");
   setfriends.mousePressed(() => initializeGen(friends));
-  setfriends.position(710, 300);
+  setfriends.position(650, 370);
 
   let setstrangers = createButton("Strangers");
   setstrangers.mousePressed(() => initializeGen(strangers));
-  setstrangers.position(770, 300);
+  setstrangers.position(650, 440);
 
-  let setstores = createButton("Stores");
+  let setstores = createButton("Traditional Stores");
   setstores.mousePressed(() => initializeGen(traditional_stores));
-  setstores.position(850, 300);
+  setstores.position(650, 510);
 
-  let setmalls = createButton("Malls");
+  let setmalls = createButton("Large Shopping Malls");
   setmalls.mousePressed(() => initializeGen(large_shopping_malls));
-  setmalls.position(910, 300);
+  setmalls.position(650, 580);
 
   let setRandom = createButton("Random");
   setRandom.mousePressed(() => initializeGen(random_gen));
-  setRandom.position(1000, 300);
+  setRandom.position(650, 650);
 
-  nextGen.position(650, 200);
-  nextGen.mousePressed(() => findNextGen());
-  camera(640, 1500, 1050, 640, 0, 1050, 0, 0, -1);
+
+  let intro = createP(`<p>This cellular automaton is designed to simulate language shifts, 
+    using data on Catalan/Spanish speakers. Each person (sphere) to the left can be in one of three states:
+    Red for monolingual (Spanish) speakers,
+    Yellow for bilingual speakers with a preference for the dominant language (Spanish & Catalan),
+    and finally Blue for bilingual speakers with a preference for the secondary language (Catalan & Spanish).
+    Initialize the first generation based on the language usage over different environments, such as at home, with friends, etc.
+    Then press Next Generation to see the change in the distribution.</p>`);
+  intro.position(1000, 230);
+  intro.addClass("intro");
+
+  setB = createSlider(5, 12, 7, 1);
+  setB.position(100, 800);
+  setBText = createP(`<b>B Threshold Value = ${setB.value()} </b>`);
+  setBText.position(100, 810);
+  setBText.addClass("intro");
+
+  currDistText = createP(`<b> Red: %${ currDist[0]*100 }   Yellow: %${currDist[1]*100}   Blue: %${currDist[2]*100}`);
+  currDistText.position(300, 810);
+  currDistText.addClass("intro");
+
+
+  let description = createP("<b>Background</b>");
+  description.position(100, 850);
+  description.addClass("p");
+
+  let description2 = createP(`<p>
+  The project is a visualizationi of the findings in <b>"A Language Shift Simulation Based on Cellular Automata"</b>, 
+  cited below. For each speaker, or sphere, the next state is determined by summing up the state values of the speaker themself
+  along with its eight adjacent neighbors. The resulting sum is then evaluated against three thresholds, known as A, B, and C.
+  <br /> <br />
+  Threshold A = sum value below the threshold results in a sharp transition
+  (i.e. blue to red), <br />
+  Threshold B = sum value below the threshold results in a higher value state to lower value state <br />
+  Threshold C = sum value above the threshold results in a lower value state to higher value state
+  (i.e. red to yellow) <br /> <br />
+  <b>Remarks </b> <br />
+  It is rare/virtually impossible for a transition from red to blue happen. This follows naturally, as this would
+  represent a monolingual Spanish speaker transitioning to a bilingual speaker with a preference for Catalan.
+  <br /> <br />
+  As seen in the paper as well as the simulation above, the behavior of the automaton differs greatly based on what 
+  threshold B is. Changing the slider above will update the value accordingly. Based on which initial environment is chosen
+  for the first generation, the B threshold will determine when and if the secondary language, or Catalan, will go extinct.
+  As the paper states in reference to the point at which the secondary language becomes extinct or survives: <br /> <br />
+  "In the four social contexts where the values of state 0 at t = 0 were lowest 
+  (at home, with friends, with strangers and in traditional stores), 
+  the reversal took place at the thresholds of b = 7 and b = 8, but the social context 
+  where the value of state 0 at t = 0 was highest (at large shopping malls), 
+  the reversal was observed at thresholds of b = 6 and b = 7."
+  <br /> <br />
+  Threshold A is set to 3 and Threshold C is set to 15 for all environments.
+
+  <br /> <br />
+  <b> Work Cited <br /> <br />
+  F. S. Beltran, S. Herrando, Violant Estreder, D. Ferreres, and M. Ruiz-Soler, 
+  “A Language Shift Simulation Based on Cellular Automata,” Jan. 01, 2010. 
+  <a href=https://www.researchgate.net/publication/259557981_A_Language_Shift_Simulation_Based_on_Cellular_Automata">https://www.researchgate.net/publication/259557981_A_Language_Shift_Simulation_Based_on_Cellular_Automata</a>
+‌
+
+  </p>`);
+  description2.position(100, 950);
+  description2.addClass("intro");
+
+
+
+  camera(640, 2500, 1050, 640, 0, 1050, 0, 0, -1);
+
 
   shape = buildGeometry(createShape);
 }
 
 function draw() {
-  background(220);
   orbitControl();
+  background(255, 208, 181);
   noStroke();
   lights();
+  setBText.html(`<b>B Value = ${setB.value()} </b>`);
+  b = setB.value();
+  currDistText.html(`<b> Red: ${currDist[0]}   Yellow: ${currDist[1]}   Blue: ${currDist[2]}`);
 
   for(let i of cells){
     for (let j of i) {
@@ -129,6 +207,9 @@ function initializeGen(environment){
       console.log("r = ", r);
     }
   }
+  currDist[0] = environment[0];
+  currDist[1] = environment[1];
+  currDist[2] = environment[2];
 }
 
 function findNextGen(){
@@ -156,8 +237,33 @@ function findNextGen(){
    }
 }
   generation++;
- console.log("next generation created");
+  console.log("next generation created");
+  findDist();
+}
 
+function findDist(){
+  let curr0 = 0;
+  let curr1 = 0;
+  let curr2 = 0;
+  let total = 105*64;
+  for(let i of cells){
+    for(let j of i){
+      switch(j.state){
+        case 0:
+          curr0++;
+          break;
+        case 1:
+          curr1++;
+          break;
+        case 2:
+          curr2++;
+          break;
+      }
+    }
+  }
+  currDist[0] = (curr0/total).toFixed(3);
+  currDist[1] = (curr1/total).toFixed(3);
+  currDist[2] = (curr2/total).toFixed(3);
 }
 
 function findNeighbors(cell){
